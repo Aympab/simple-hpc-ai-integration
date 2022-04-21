@@ -24,6 +24,7 @@ LIBS      = -lm
 LFLAGS    = $(LINKOPTS) $(LIBS) -lstdc++
 
 CXXFLAGS  = $(CXXOPTS) $(CXXINCLUDES) $(CXXDEFS) $(LFLAGS)
+
 ########################################################################
 # Rules for compiling the source files
 ########################################################################
@@ -35,21 +36,13 @@ CXXFLAGS  = $(CXXOPTS) $(CXXINCLUDES) $(CXXDEFS) $(LFLAGS)
 	$(CC) $(CFLAGS) -c  $<
 
 ########################################################################
-# List of all programs to be compiled
+# List of programs to be compiled
 ########################################################################
 ALLPROGS = main
 
 all: $(ALLPROGS)
 
 default: all
-
-
-########################################################################
-# Example 5
-########################################################################
-# main: main.o
-# 	$(CXX) -o $@ $^ $(LFLAGS)
-
 
 ########################################################################
 # Clean up
