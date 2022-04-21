@@ -18,8 +18,3 @@ int main (int argc, char* argv[]){
     MPI_Finalize();
     return 0;
 }
-
-
-// mpicxx -g -Wall -Wno-deprecated -Ibin_hypre/hypre-master/src/hypre/include -I.. -DHAVE_CONFIG_H -DHYPRE_TIMING    -c -o tp.o tp.cpp
-// mpicxx -g -Wall -Wno-deprecated -DHAVE_CONFIG_H -c -o tp.o main.cpp
-// mpicxx -o tp tp.o -g -Wall -Lbin_hypre/hypre-master/src/hypre/lib -lHYPRE -lm -lstdc++
