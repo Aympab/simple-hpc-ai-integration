@@ -4,24 +4,23 @@
 CC        = mpicc
 CXX       = mpicxx
 
-# LIB_DIR = bin_hypre/hypre-master/src/hypre
+ONNX_DIR   = external/onnxruntime
 
 ########################################################################
 # Compiling and linking options
 ########################################################################
 COPTS     = -g -Wall
-# CINCLUDES = -I$(HYPRE_DIR)/include
+CINCLUDES = -I$(ONNX_DIR)/include
 # CDEFS     = -DHAVE_CONFIG_H -DHYPRE_TIMING
 CFLAGS    = $(COPTS) $(CINCLUDES) $(CDEFS)
 
 CXXOPTS   = $(COPTS) -Wno-deprecated
-CXXINCLUDES = $(CINCLUDES) -I..
+CXXINCLUDES = $(CINCLUDES) #-I..
 CXXDEFS   = $(CDEFS)
 
 LINKOPTS  = $(COPTS)
-# LIBS      = -L$(HYPRE_DIR)/lib -lHYPRE -lm
-LIBS      = -lm
-LFLAGS    = $(LINKOPTS) $(LIBS) -lstdc++
+LIBS      = -L$(ONNX_DIR)/lib -lonnxruntime -lm
+LFLAGS    = $(LINKOPTS) $(LIBS) -std=c++11 #For onnxruntime we need -std=c++11
 
 CXXFLAGS  = $(CXXOPTS) $(CXXINCLUDES) $(CXXDEFS) $(LFLAGS)
 
@@ -41,9 +40,8 @@ CXXFLAGS  = $(CXXOPTS) $(CXXINCLUDES) $(CXXDEFS) $(LFLAGS)
 ALLPROGS = main
 
 all: $(ALLPROGS)
-
+²
 default: all
-
 ########################################################################
 # Clean up
 ########################################################################
