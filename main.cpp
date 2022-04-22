@@ -1,7 +1,6 @@
 #include <iostream>
 #include <mpi.h>
-// #include "external/onnxruntime/include/onnxruntime_cxx_api.h"
-#include <onnxruntime_cxx_api.h>
+#include "utils.cpp"
 
 int main (int argc, char* argv[]){
     int myid, num_procs;
@@ -13,7 +12,9 @@ int main (int argc, char* argv[]){
 
 
     //Do stuff
-    std::cout << "Hello World!" << std::endl;
+    if (myid > 0){
+        std::cout << "Hello World!" << std::endl;
+    }
 
 
     /* Finalize MPI */

@@ -14,3 +14,7 @@ Append the `LD_LIBRARY_PATH` variable with the lib of onnxruntine :
 
 ### Build
 `make`
+
+
+mpicxx -o main -g -Wall -Wno-deprecated -Iexternal/onnxruntime/include -Lexternal/onnxruntime/lib -lonnxruntime -lm -std=c++11     main.cpp
+# TODO : CHANGER L'ORDRED'APPEL

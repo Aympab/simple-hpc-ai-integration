@@ -18,21 +18,11 @@ CXXOPTS   = $(COPTS) -Wno-deprecated
 CXXINCLUDES = $(CINCLUDES) #-I..
 CXXDEFS   = $(CDEFS)
 
-LINKOPTS  = $(COPTS)
+# LINKOPTS  = $(COPTS)
 LIBS      = -L$(ONNX_DIR)/lib -lonnxruntime -lm
-LFLAGS    = $(LINKOPTS) $(LIBS) -std=c++11 #For onnxruntime we need -std=c++11
+LFLAGS    = $(LIBS) -std=c++11 #For onnxruntime we need -std=c++11
 
 CXXFLAGS  = $(CXXOPTS) $(CXXINCLUDES) $(CXXDEFS) $(LFLAGS)
-
-########################################################################
-# Rules for compiling the source files
-########################################################################
-.SUFFIXES: .c .cxx
-
-.cxx.o:
-	$(CXX) $(CXXFLAGS) -c $<
-.c.o:
-	$(CC) $(CFLAGS) -c  $<
 
 ########################################################################
 # List of programs to be compiled
@@ -40,7 +30,7 @@ CXXFLAGS  = $(CXXOPTS) $(CXXINCLUDES) $(CXXDEFS) $(LFLAGS)
 ALLPROGS = main
 
 all: $(ALLPROGS)
-²
+
 default: all
 ########################################################################
 # Clean up
