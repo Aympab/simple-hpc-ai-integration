@@ -31,13 +31,15 @@ int run_inference(OrtSession* session){//, const ORTCHAR_T* input_file, const OR
     // const size_t model_input_len = model_input_ele_count * sizeof(float);
 
     OrtValue* input_tensor = NULL;
-    ORT_ABORT_ON_ERR(g_ort->CreateTensorWithDataAsOrtValue(memory_info,
-                                                           model_input,
-                                                           model_input_len,
-                                                           input_shape,
-                                                           input_shape_len,
-                                                           ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
-                                                           &input_tensor));
+    ORT_ABORT_ON_ERR(g_ort->CreateTensorWithDataAsOrtValue(
+        memory_info,
+        model_input,
+        model_input_len,
+        input_shape,
+        input_shape_len,
+        ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
+        &input_tensor));
+
     assert(input_tensor != NULL);
     int is_tensor;
     ORT_ABORT_ON_ERR(g_ort->IsTensor(input_tensor, &is_tensor));
@@ -51,11 +53,32 @@ int run_inference(OrtSession* session){//, const ORTCHAR_T* input_file, const OR
     // const int64_t output_shape[] = {1};
     // const size_t output_shape_len = sizeof(output_shape) / sizeof(output_shape[0]);
 
-    // OrtValue* output_tensor = NULL;
-    // ORT_ABORT_ON_ERR(g_ort->CreateTensorWithDataAsOrtValue(memory_info, results_.data(), results_.size()*sizeof(float), output_shape, output_shape_len, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &output_tensor));
+    const int64_t output_shape[] = {1};
 
-    // ORT_ABORT_ON_ERROR(
-    //     g_ort->Run(session, NULL, input_names, (const OrtValue* const*)&input_tensor, 1, output_names, 1, &output_tensor));
+    OrtValue* output_tensor = NULL;
+    ORT_ABORT_ON_ERR(g_ort->CreateTensorWithDataAsOrtValue(
+        memory_info,
+        NULL,
+        sizeof(float),
+        output_shape,
+        1,
+        ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
+        &output_tensor
+    ));
+
+    // ORT_ABORT_ON_ERR(
+        // g_ort->Run(session, NULL, input_names, (const OrtValue* const*)&input_tensor, 1, output_names, 1, &output_tensor));
+    
+    ORT_ABORT_ON_ERR(g_ort->Run(
+        session,
+        NULL,
+        NULL,
+        (const OrtValue* const*)&input_tensor,
+        (size_t)8,
+        NULL,
+        1,
+        &output_tensor
+    ));
     // assert(output_tensor != NULL);
     // ORT_ABORT_ON_ERROR(g_ort->IsTensor(output_tensor, &is_tensor));
     // assert(is_tensor);
