@@ -1,5 +1,7 @@
 #include <iostream>
 #include <mpi.h>
+// #include "external/onnxruntime/include/onnxruntime_cxx_api.h"
+#include <onnxruntime_cxx_api.h>
 
 int main (int argc, char* argv[]){
     int myid, num_procs;

@@ -7,4 +7,10 @@
 
 
 ## Compilation
+### Export ONNX Library
+Append the `LD_LIBRARY_PATH` variable with the lib of onnxruntine :
+
+`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/source/simple-hpc/external/onnxruntime/lib/`
+
+### Build
 `make`
