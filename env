@@ -1,0 +1,4 @@
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/source/simple-hpc/external/onnxruntime/lib/
+export TVM_HOME=/net/jabba/home0/am611608/source/tvm
+export PYTHONPATH=$TVM_HOME/python:${PYTHONPATH}
+alias tvmc='python -m tvm.driver.tvmc'

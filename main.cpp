@@ -141,7 +141,7 @@ int main (int argc, char* argv[]){
 
     // verify_input_output_count(session);
     // int ret = run_inference(session, input_file, output_file);
-    int ret = run_inference(session);
+    // int ret = run_inference(session);
 
 
 
