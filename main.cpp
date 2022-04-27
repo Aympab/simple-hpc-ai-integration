@@ -5,10 +5,24 @@
 #include <assert.h>
 
 
-
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 int main (int argc, char* argv[]){
     int myid, num_procs;
+    int N;
+
+    if (argc > 1){
+      N = atoi(argv[1]);
+      if(N <= 0){
+        throw std::invalid_argument("N must be an integer > 0.");
+      }
+    }
+    else{
+      N = 5;
+    }
+
+    printf("N = %d", N);
 
     /* Initialize MPI */
     MPI_Init(&argc, &argv);
@@ -16,17 +30,21 @@ int main (int argc, char* argv[]){
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
 
+    //Initialize random matrix size NxN
+    //Split & Send matrix between the procs
+    //
+
     //Do stuff
     if (myid > 0){
         std::cout << "Hello World!" << std::endl;
     }
 
-    Eigen::MatrixXd m(2,2);
-    m(0,0) = 3;
-    m(1,0) = 2.5;
-    m(0,1) = -1;
-    m(1,1) = m(1,0) + m(0,1);
-    std::cout << m + m << std::endl;
+    MatrixXd m = MatrixXd::Random(N,3);
+    m = (m + MatrixXd::Constant(N,3,1.2)) * 50;
+    std::cout << "m =" << std::endl << m << std::endl;
+    VectorXd v(3);
+    v << 1, 2, 3;
+    std::cout << "m * v =" << std::endl << m * v << std::endl;
 
     /* Finalize MPI */
     MPI_Finalize();
