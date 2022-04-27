@@ -39,6 +39,6 @@ From [TVM official tutorial](https://tvm.apache.org/docs/tutorial/tvmc_command_l
 ```
 $ python -m tvm.driver.tvmc compile    \
          --target "llvm"               \
-         --output output-model-tvm.tar \
+         --output toy-model-tvm.tar \
          toy-model.onnx
 ```

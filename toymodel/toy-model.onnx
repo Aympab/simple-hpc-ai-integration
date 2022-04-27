@@ -1,0 +1,31 @@
+pytorch1.10:º
+"
+input.1
+178MatMul_0"MatMul
+
+l1.bias
+89Add_1"Add
+
+9
+1811MatMul_2"MatMul
+
+l2.bias
+1112Add_3"Add
+
+12
+1914MatMul_4"MatMul
+
+l3.bias
+1415Add_5"Add
+
+1516	Sigmoid_6"Sigmoidtorch-jit-export*Bl1.biasJ$Ýœ¾÷Î~>aY>o¤´¾*Bl2.biasJ(^Š=P¾ç>*Bl3.biasJ¢ÃÙ=*B17J€]àH>g
+Ž>
+n½Uål>ËàF>¯|?¾Gâ|¾Ã#À½p>uG¾ó’>U_w¾Ñá¬¾y7U>œyl>æ“¬½¨×€=Jk¯½Ä<¾Hî½½–Ã½˜ñ§½nÌÄ½4Óœ=21+¾ìÞâºOù«="¾L¾ƒ¿->Må¾iì±>S>¾*,B18J èî/>îTï¾,>@ Ñ¼dpv¾8$k>¼P>ð€>*B19J¡Þg¾–·›¾Z
+input.1
+
+
+b
+16
+
+
+B	
