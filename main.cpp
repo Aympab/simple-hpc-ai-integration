@@ -3,10 +3,13 @@
 #include <Eigen/Dense>
 // #include <onnxruntime_cxx_api.h>
 #include <assert.h>
+#include <random>
 
 
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
+using Eigen::MatrixXf;
+using Eigen::VectorXf;
+
+#define __DEBUG 1
 
 int main (int argc, char* argv[]){
     int myid, num_procs;
@@ -17,12 +20,32 @@ int main (int argc, char* argv[]){
       if(N <= 0){
         throw std::invalid_argument("N must be an integer > 0.");
       }
+      std::cout << "Running with matrix size N = " << N << std::endl;
     }
     else{
+      std::cout << "Running with default matrix size N = 5" << std::endl;
       N = 5;
     }
 
-    printf("N = %d", N);
+    /*
+    Random initializations 
+      - Matrix M size NxN
+      - Vector v size N
+    */
+    //see https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
+    std::random_device rd;
+    std::mt19937 gen(rd());  //here you could set the seed, but std::random_device already does that
+    std::uniform_real_distribution<float> dis(-1.0, 1.0);
+
+    MatrixXf M = MatrixXf::NullaryExpr(N, N,[&](){return dis(gen);});
+    VectorXf V = VectorXf::NullaryExpr(N,[&](){return dis(gen);});
+
+
+    if (__DEBUG){
+      std::cout << "M =" << std::endl << M << std::endl;
+      std::cout << "V =" << std::endl << V << std::endl;
+    }
+
 
     /* Initialize MPI */
     MPI_Init(&argc, &argv);
@@ -30,7 +53,6 @@ int main (int argc, char* argv[]){
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
 
-    //Initialize random matrix size NxN
     //Split & Send matrix between the procs
     //
 
@@ -38,13 +60,6 @@ int main (int argc, char* argv[]){
     if (myid > 0){
         std::cout << "Hello World!" << std::endl;
     }
-
-    MatrixXd m = MatrixXd::Random(N,3);
-    m = (m + MatrixXd::Constant(N,3,1.2)) * 50;
-    std::cout << "m =" << std::endl << m << std::endl;
-    VectorXd v(3);
-    v << 1, 2, 3;
-    std::cout << "m * v =" << std::endl << m * v << std::endl;
 
     /* Finalize MPI */
     MPI_Finalize();
