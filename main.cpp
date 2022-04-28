@@ -8,19 +8,19 @@
 
 // #include <stdint.h>
 // #include <limits.h>
-// #if SIZE_MAX == UCHAR_MAX
-//    #define my_MPI_SIZE_T MPI_UNSIGNED_CHAR
-// #elif SIZE_MAX == USHRT_MAX
-//    #define my_MPI_SIZE_T MPI_UNSIGNED_SHORT
-// #elif SIZE_MAX == UINT_MAX
-//    #define my_MPI_SIZE_T MPI_UNSIGNED
-// #elif SIZE_MAX == ULONG_MAX
-//    #define my_MPI_SIZE_T MPI_UNSIGNED_LONG
-// #elif SIZE_MAX == ULLONG_MAX
-//    #define my_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
-// #else
-//    #error "what is happening here?"
-// #endif
+#if SIZE_MAX == UCHAR_MAX
+   #define my_MPI_SIZE_T MPI_UNSIGNED_CHAR
+#elif SIZE_MAX == USHRT_MAX
+   #define my_MPI_SIZE_T MPI_UNSIGNED_SHORT
+#elif SIZE_MAX == UINT_MAX
+   #define my_MPI_SIZE_T MPI_UNSIGNED
+#elif SIZE_MAX == ULONG_MAX
+   #define my_MPI_SIZE_T MPI_UNSIGNED_LONG
+#elif SIZE_MAX == ULLONG_MAX
+   #define my_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
+#else
+   #error "what is happening here?"
+#endif
 
 using Eigen::MatrixXf;
 using Eigen::VectorXf;
@@ -35,6 +35,7 @@ int main (int argc, char* argv[]){
   /* Initialization */
   int myid, nb_procs;
   size_t N;
+  float savedNorm;
 
   omp_set_num_threads(4);
   Eigen::setNbThreads(4);
@@ -49,7 +50,7 @@ int main (int argc, char* argv[]){
     if (argc > 1){
       N = atoi(argv[1]);
       if(N <= 0){
-        // MPI_Finalize(); CANNOT DO THIS BECAUSE EVERY ONE NEEDS TO CALL MPI FINALIZE : HOW TO THROW ERROR WELL ??
+        // MPI_Finalize(); TODO CANNOT DO THIS BECAUSE EVERY ONE NEEDS TO CALL MPI FINALIZE : HOW TO THROW ERROR WELL ??
         throw std::invalid_argument("N must be an integer > 0.");
       }
       std::cout << "Running with matrix size N = " << N << std::endl;
@@ -62,7 +63,7 @@ int main (int argc, char* argv[]){
 
 
   //Sending Matrix size to everyone
-  MPI_Bcast(&N, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&N, 1, my_MPI_SIZE_T, 0, MPI_COMM_WORLD);
 
   /* Split & Send matrix between the procs */
   int localNbRows = N / nb_procs;
@@ -138,11 +139,12 @@ int main (int argc, char* argv[]){
     Matrix<float, -1, -1, Eigen::RowMajor> M = MatrixXf::
                                                 NullaryExpr(
                                                   N, N,
-                                                  [&](){return uniform(gen);}
+                                                  [&](){return uniform(gen)*50;}
                                                 );
     Vector<float, -1> v = VectorXf::NullaryExpr(N,[&](){return uniform(gen);});
 
-    if(__DEBUG) std::cout << "True norm : " << (M*v).norm() << std::endl;
+    savedNorm = (M*v).norm();
+    if(__DEBUG) std::cout << "True norm : " << savedNorm << std::endl;
 
     /* Send matrix to other proc */
     MPI_Scatterv(
@@ -206,9 +208,11 @@ int main (int argc, char* argv[]){
                 MPI_COMM_WORLD);      //MPI_Comm communicator);
 
 
-  VectorXf finalResult = Eigen::Map<VectorXf>(finalBuff, N);
-  if(__DEBUG) std::cout << "\nFINAL NORM = "<< finalResult.norm() << std::endl;
+    VectorXf finalResult = Eigen::Map<VectorXf>(finalBuff, N);
 
+    if(__DEBUG) std::cout << "\nFINAL NORM = "<< finalResult.norm() << std::endl;
+    
+    assert(finalResult.norm() == savedNorm);
   }
   else{
     MPI_Gatherv(localRes.data(),  //buffer_send,
