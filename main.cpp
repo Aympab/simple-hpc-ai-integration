@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <limits.h>
+
 #if SIZE_MAX == UCHAR_MAX
    #define my_MPI_SIZE_T MPI_UNSIGNED_CHAR
 #elif SIZE_MAX == USHRT_MAX
@@ -24,6 +25,9 @@
 
 using Eigen::MatrixXf;
 using Eigen::VectorXf;
+using Eigen::Map;
+using Eigen::Matrix;
+
 
 #define __DEBUG 1
 
@@ -51,10 +55,6 @@ int main (int argc, char* argv[]){
       std::cout << "Running with default matrix size N = 5" << std::endl;
       N = 5;
     }
-    // if (__DEBUG){
-    //   std::cout << "M =" << std::endl << M << std::endl;
-    //   std::cout << "v =" << std::endl << v << std::endl;
-    // }
   } // end if(myid == 0)
 
 
@@ -62,7 +62,7 @@ int main (int argc, char* argv[]){
   MPI_Bcast(&N, 1, my_MPI_SIZE_T, 0, MPI_COMM_WORLD);
 
   /* Split & Send matrix between the procs */
-  int localsize = N / num_procs;
+  int localNbRows = N / num_procs;
 
   //Settings arrays to use to split matrix with MPI
   int counts[num_procs];
@@ -88,28 +88,27 @@ int main (int argc, char* argv[]){
 
           pupper = plocal_size*(p+1);
           pupper += std::min(p+1, pextra);
-          pupper = pupper - 1;
 
-          counts[p] = pupper - plower + 1;
+          counts[p] = (pupper - plower) * N;
 
           if(p > 0) displacements[p] = sum_count;
-          sum_count += counts[p]-1;
-      }
+          sum_count += counts[p];
+      } // end for p
   } // end if(myid == 0)
 
   if(N % num_procs != 0){
     int extra = N % num_procs;
     for(int i = 0; i < extra; i++){
       if(myid == i){
-        localsize++;
+        localNbRows++;
       }
     }
   }// end if(N % num_procs != 0)
 
-  if(__DEBUG)
-      std::cout << "#" << myid << " - local size = " << localsize << std::endl;
+  // if(__DEBUG)
+      // std::cout << "#" << myid << " - local size = " << localNbRows << std::endl;
 
-  float rows[localsize];
+  float values[localNbRows*N];
 
   if(myid == 0){
     /*
@@ -124,31 +123,40 @@ int main (int argc, char* argv[]){
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> uniform(-1.0, 1.0);
 
-    MatrixXf M = MatrixXf::NullaryExpr(N, N,[&](){return uniform(gen);});
+    // MatrixXf M = MatrixXf::NullaryExpr(N, N,[&](){return uniform(gen);});
+    MatrixXf M = MatrixXf::Random(N, N);
     VectorXf v = VectorXf::NullaryExpr(N,[&](){return uniform(gen);});
+    if (__DEBUG){
+      std::cout << "M =" << std::endl << M << std::endl;
+    //   std::cout << "v =" << std::endl << v << std::endl;
+    }
 
   /* Send matrix to other proc */
     MPI_Scatterv(
-        M.data(),
-        counts,
-        displacements,
-        MPI_FLOAT,
-        &rows,
-        localsize+1,
-        MPI_FLOAT,        //Datatype receive
-        0,              //root MPI ID
+        M.data(),         //buffer_send
+        counts,           //number of elements to send to each proc
+        displacements,    //displacement to each process
+        MPI_FLOAT,        //type send
+        &values,          //buffer to receive values
+        localNbRows*N,    //number of elements on the reveive buffer
+        MPI_FLOAT,        //datatype receive
+        0,                //root MPI ID
         MPI_COMM_WORLD);
   }
   else{
-    MPI_Scatterv(NULL, NULL, NULL,
-        MPI_FLOAT,
-        &rows,
-        localsize,
+    MPI_Scatterv(NULL, NULL, NULL, MPI_FLOAT,
+        &values,
+        localNbRows*N,
         MPI_FLOAT,        //Datatype receive
-        0,              //root MPI ID
+        0,                //root MPI ID
         MPI_COMM_WORLD);
   } // end if(myid == 0)
 
+  auto localMat = Eigen::Map<MatrixXf>(values, localNbRows, N);
+  if(myid == 1){
+
+    std::cout << "LOCAL MAT=" << localMat << std::endl;
+  }
 
   /* Finalize MPI */
   MPI_Finalize();
