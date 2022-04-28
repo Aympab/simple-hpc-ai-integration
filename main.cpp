@@ -64,8 +64,8 @@ int main (int argc, char* argv[]){
       std::cout << "Running with matrix size N = " << N << std::endl;
     }
     else{
-      std::cout << "Running with default matrix size N = 5" << std::endl;
       N = 5;
+      std::cout << "Running with default matrix size N = " << N << std::endl;
     }
   } // end if(myid == 0)
 
@@ -130,7 +130,7 @@ int main (int argc, char* argv[]){
 
   float valuesBuff[localNbRows*N];
   // float* vecBuff = (float*)malloc(N*sizeof(float));
-  float vecBuff[N];
+  float vecBuff[N]; //TODO: probably bug here
 
   if(myid == 0){
     /*
@@ -143,7 +143,7 @@ int main (int argc, char* argv[]){
     */
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> uniform(-1.0, 1.0);
+    std::uniform_real_distribution<double> uniform(-1.0, 1.0);
 
     Matrix<float, -1, -1, Eigen::RowMajor> M = MatrixXf::
                                                 NullaryExpr(
@@ -160,7 +160,7 @@ int main (int argc, char* argv[]){
         counts,           //number of elements to send to each proc
         displacements,    //displacement to each process
         MPI_FLOAT,        //type send
-        &valuesBuff,          //buffer to receive valuesBuff
+        &valuesBuff,      //buffer to receive valuesBuff
         localNbRows*N,    //number of elements on the reveive buffer
         MPI_FLOAT,        //datatype receive
         0,                //root MPI ID
@@ -182,12 +182,11 @@ int main (int argc, char* argv[]){
         MPI_COMM_WORLD);
   } // end if(myid == 0)
 
-  // MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+
   //Bcast the whole vector into vecBuffer
-  // float* myBuff = (float*)malloc(N*sizeof(float));
-  // if(myid==0) myBuff = vecBuff;
-  MPI_Bcast(&vecBuff, N, MPI_FLOAT, 0, MPI_COMM_WORLD);
   // if(myid == 0) print_buffer(std::string("BEFORE BCAST"), vecBuff, N);
+  MPI_Bcast(&vecBuff, N, MPI_FLOAT, 0, MPI_COMM_WORLD); //TODO: probably bug here
 
 
   /* Receiving objects */
@@ -213,7 +212,7 @@ int main (int argc, char* argv[]){
 
 
   VectorXf finalResult = Eigen::Map<VectorXf>(finalBuff, N);
-  std::cout << "\n\nFINAL NORM =\n"<< finalResult.norm() << std::endl;
+  std::cout << "\nFINAL NORM = "<< finalResult.norm() << std::endl;
 
   }
   else{
