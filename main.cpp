@@ -6,22 +6,21 @@
 #include <random>
 #include <algorithm>
 
-#include <stdint.h>
-#include <limits.h>
-
-#if SIZE_MAX == UCHAR_MAX
-   #define my_MPI_SIZE_T MPI_UNSIGNED_CHAR
-#elif SIZE_MAX == USHRT_MAX
-   #define my_MPI_SIZE_T MPI_UNSIGNED_SHORT
-#elif SIZE_MAX == UINT_MAX
-   #define my_MPI_SIZE_T MPI_UNSIGNED
-#elif SIZE_MAX == ULONG_MAX
-   #define my_MPI_SIZE_T MPI_UNSIGNED_LONG
-#elif SIZE_MAX == ULLONG_MAX
-   #define my_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
-#else
-   #error "what is happening here?"
-#endif
+// #include <stdint.h>
+// #include <limits.h>
+// #if SIZE_MAX == UCHAR_MAX
+//    #define my_MPI_SIZE_T MPI_UNSIGNED_CHAR
+// #elif SIZE_MAX == USHRT_MAX
+//    #define my_MPI_SIZE_T MPI_UNSIGNED_SHORT
+// #elif SIZE_MAX == UINT_MAX
+//    #define my_MPI_SIZE_T MPI_UNSIGNED
+// #elif SIZE_MAX == ULONG_MAX
+//    #define my_MPI_SIZE_T MPI_UNSIGNED_LONG
+// #elif SIZE_MAX == ULLONG_MAX
+//    #define my_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
+// #else
+//    #error "what is happening here?"
+// #endif
 
 using Eigen::MatrixXf;
 using Eigen::VectorXf;
@@ -33,7 +32,7 @@ using Eigen::Vector;
 #define __DEBUG 1
 
 
-void inline print_buffer(std::string infos, float* buffer, size_t N){
+void inline print_buffer(std::string infos, int* buffer, size_t N){
   std::cout << "\n\nBUFFER " << infos << "=\n";
   for (size_t i = 0; i<N; ++i){
     std::cout << buffer[i];
@@ -72,10 +71,20 @@ int main (int argc, char* argv[]){
 
 
   //Sending Matrix size to everyone
-  MPI_Bcast(&N, 1, my_MPI_SIZE_T, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&N, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
 
   /* Split & Send matrix between the procs */
   int localNbRows = N / num_procs;
+ { //appending localNbRows if there is any extra rows
+    int extra = N % num_procs;
+    if(extra != 0){
+      for(int i = 0; i < extra; i++){
+        if(myid == i){
+          localNbRows++;
+        }
+      }
+    }// end if(extra != 0)
+  }
 
   //Settings arrays to use to split matrix with MPI
   int counts[num_procs];
@@ -85,9 +94,9 @@ int main (int argc, char* argv[]){
 
   displacements[0] = 0;
   displacements_final[0] = 0;
-  //Filling the counts and offset arrays for MPI_ScatterV
   if(myid == 0)
   {
+    //Filling the counts and offset arrays for MPI_ScatterV and GatherV
       int plocal_size = N/num_procs;
       int pextra = N - plocal_size*num_procs;
 
@@ -112,22 +121,12 @@ int main (int argc, char* argv[]){
           if(p > 0){
             displacements[p] = sum_count;
             displacements_final[p] = sum_count_final;
-            // std::cout << displacements_final[p] <<
           }
           sum_count += counts[p];
           sum_count_final += counts_final[p];
+
       } // end for p
-
   } // end if(myid == 0)
-
-  if(N % num_procs != 0){
-    int extra = N % num_procs;
-    for(int i = 0; i < extra; i++){
-      if(myid == i){
-        localNbRows++;
-      }
-    }
-  }// end if(N % num_procs != 0)
 
   float valuesBuff[localNbRows*N];
   // float* vecBuff = (float*)malloc(N*sizeof(float));
@@ -153,7 +152,7 @@ int main (int argc, char* argv[]){
                                                 );
     Vector<float, -1> v = VectorXf::NullaryExpr(N,[&](){return uniform(gen);});
 
-    // std::cout << "REAL VEC =\n" << v << std::endl;
+    std::cout << "True norm : " << (M*v).norm() << std::endl;
 
     /* Send matrix to other proc */
     MPI_Scatterv(
@@ -168,7 +167,7 @@ int main (int argc, char* argv[]){
         MPI_COMM_WORLD);
 
     /* Setup to send the whole vector, going to use this in Bcast */
-    // vecBuff = v.data(); //NO IDEA WHY JUST THIS DOESN'T WORK ????
+    // vecBuff = v.data(); //TODO : NO IDEA WHY JUST THIS DOESN'T WORK ????
     auto tmp = v.data();
     for(size_t i =0; i<N;i++){
       vecBuff[i] = tmp[i];
@@ -183,37 +182,38 @@ int main (int argc, char* argv[]){
         MPI_COMM_WORLD);
   } // end if(myid == 0)
 
+  // MPI_Barrier(MPI_COMM_WORLD);
+  //Bcast the whole vector into vecBuffer
+  // float* myBuff = (float*)malloc(N*sizeof(float));
+  // if(myid==0) myBuff = vecBuff;
+  MPI_Bcast(&vecBuff, N, MPI_FLOAT, 0, MPI_COMM_WORLD);
   // if(myid == 0) print_buffer(std::string("BEFORE BCAST"), vecBuff, N);
 
-  /* Receiving objects */
-  //Build local matrix
-  auto localMat = Eigen::Map<MatrixXf>(valuesBuff, localNbRows, N);
 
-  //Bcast the whole vector into vecBuffer
-  MPI_Bcast(&vecBuff, N, MPI_FLOAT, 0, MPI_COMM_WORLD);
-  
-  //Create Eigen vector based on vecBuffer
+  /* Receiving objects */
+  //Build Eigen local matrix based on valuesBuff
+  auto localMat = Eigen::Map<MatrixXf>(valuesBuff, localNbRows, N);
+  //Build Eigen vector based on vecBuffer
   auto localVec = Eigen::Map<VectorXf>(vecBuff, N);
 
   //Compute partial Mv product
   VectorXf localRes = localMat * localVec;
-  // if(myid == 0 || myid == 1) std::cout << "\n\nLOCAL RES=\n"<< localRes << std::endl;
 
   if(myid == 0){
     float finalBuff[N];
-    MPI_Gatherv(localRes.data(),  //const void* buffer_send,
-                localNbRows,      //int count_send,
-                MPI_FLOAT,        //MPI_Datatype datatype_send,
-                &finalBuff,        //void* buffer_recv,
-                counts_final,           //const int* counts_recv,
-                displacements_final,    //const int* displacements,
-                MPI_FLOAT,        //MPI_Datatype datatype_recv,
-                0,                //int root,
-                MPI_COMM_WORLD);  //MPI_Comm communicator);
+    MPI_Gatherv(localRes.data(),      //const void* buffer_send,
+                localNbRows,          //int count_send,
+                MPI_FLOAT,            //MPI_Datatype datatype_send,
+                &finalBuff,           //void* buffer_recv,
+                counts_final,         //const int* counts_recv,
+                displacements_final,  //const int* displacements,
+                MPI_FLOAT,            //MPI_Datatype datatype_recv,
+                0,                    //int root,
+                MPI_COMM_WORLD);      //MPI_Comm communicator);
 
 
   VectorXf finalResult = Eigen::Map<VectorXf>(finalBuff, N);
-  std::cout << "\n\nFINAL RES =\n"<< finalResult << std::endl;
+  std::cout << "\n\nFINAL NORM =\n"<< finalResult.norm() << std::endl;
 
   }
   else{
