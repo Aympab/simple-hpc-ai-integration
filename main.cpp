@@ -195,8 +195,13 @@ int main (int argc, char* argv[]){
   //Build Eigen vector based on vecBuffer
   auto localVec = Eigen::Map<VectorXf>(vecBuff, N);
 
+  omp_set_num_threads(4);
+  Eigen::setNbThreads(4);
   //Compute partial Mv product
   VectorXf localRes = localMat * localVec;
+
+  //TODO HERE : CALL NEURAL NETWORK
+
 
   if(myid == 0){
     float finalBuff[N];
@@ -216,19 +221,18 @@ int main (int argc, char* argv[]){
 
   }
   else{
-    MPI_Gatherv(localRes.data(),  //const void* buffer_send,
-                localNbRows,      //int count_send,
-                MPI_FLOAT,        //MPI_Datatype datatype_send,
-                NULL,             //void* buffer_recv,
-                NULL,             //const int* counts_recv,
-                NULL,             //const int* displacements,
-                MPI_FLOAT,        //MPI_Datatype datatype_recv,
-                0,                //int root,
-                MPI_COMM_WORLD);  //MPI_Comm communicator);
+    MPI_Gatherv(localRes.data(),  //buffer_send,
+                localNbRows,      //count_send,
+                MPI_FLOAT,        //datatype_send,
+                NULL,             //buffer_recv,
+                NULL,             //counts_recv,
+                NULL,             //displacements,
+                MPI_FLOAT,        //datatype_recv,
+                0,                //root,
+                MPI_COMM_WORLD);  //communicator
   }
 
   /* Finalize MPI */
   MPI_Finalize();
   return 0;
 }
-
