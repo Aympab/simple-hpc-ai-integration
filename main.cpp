@@ -31,27 +31,18 @@ using Eigen::Vector;
 
 #define __DEBUG 1
 
-
-void inline print_buffer(std::string infos, int* buffer, size_t N){
-  std::cout << "\n\nBUFFER " << infos << "=\n";
-  for (size_t i = 0; i<N; ++i){
-    std::cout << buffer[i];
-    if(i < N-1)
-      std::cout << ", ";
-    else
-      std::cout << std::endl;
-  }
-}
-
 int main (int argc, char* argv[]){
-  /* Variables initialization */
-  int myid, num_procs;
+  /* Initialization */
+  int myid, nb_procs;
   size_t N;
+
+  omp_set_num_threads(4);
+  Eigen::setNbThreads(4);
 
   /* Initialize MPI */
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-  MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+  MPI_Comm_size(MPI_COMM_WORLD, &nb_procs);
 
   if(myid == 0){
     /* Parsing command line arguments */
@@ -74,9 +65,9 @@ int main (int argc, char* argv[]){
   MPI_Bcast(&N, 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
 
   /* Split & Send matrix between the procs */
-  int localNbRows = N / num_procs;
+  int localNbRows = N / nb_procs;
  { //appending localNbRows if there is any extra rows
-    int extra = N % num_procs;
+    int extra = N % nb_procs;
     if(extra != 0){
       for(int i = 0; i < extra; i++){
         if(myid == i){
@@ -87,25 +78,25 @@ int main (int argc, char* argv[]){
   }
 
   //Settings arrays to use to split matrix with MPI
-  int counts[num_procs];
-  int displacements[num_procs];
-  int counts_final[num_procs];
-  int displacements_final[num_procs];
+  int counts[nb_procs];
+  int displacements[nb_procs];
+  int counts_final[nb_procs];
+  int displacements_final[nb_procs];
 
   displacements[0] = 0;
   displacements_final[0] = 0;
   if(myid == 0)
   {
     //Filling the counts and offset arrays for MPI_ScatterV and GatherV
-      int plocal_size = N/num_procs;
-      int pextra = N - plocal_size*num_procs;
+      int plocal_size = N/nb_procs;
+      int pextra = N - plocal_size*nb_procs;
 
       int plower;
       int pupper;
       int sum_count = 0;
       int sum_count_final = 0;
 
-      for(int p = 0; p < num_procs; p++){
+      for(int p = 0; p < nb_procs; p++){
           plower=0;
           pupper=0;
 
@@ -124,13 +115,12 @@ int main (int argc, char* argv[]){
           }
           sum_count += counts[p];
           sum_count_final += counts_final[p];
-
       } // end for p
   } // end if(myid == 0)
 
   float valuesBuff[localNbRows*N];
   // float* vecBuff = (float*)malloc(N*sizeof(float));
-  float vecBuff[N]; //TODO: probably bug here
+  float vecBuff[N];
 
   if(myid == 0){
     /*
@@ -152,7 +142,7 @@ int main (int argc, char* argv[]){
                                                 );
     Vector<float, -1> v = VectorXf::NullaryExpr(N,[&](){return uniform(gen);});
 
-    std::cout << "True norm : " << (M*v).norm() << std::endl;
+    if(__DEBUG) std::cout << "True norm : " << (M*v).norm() << std::endl;
 
     /* Send matrix to other proc */
     MPI_Scatterv(
@@ -172,7 +162,7 @@ int main (int argc, char* argv[]){
     for(size_t i =0; i<N;i++){
       vecBuff[i] = tmp[i];
     }
-  }
+  } // if(myid == 0)
   else{
     MPI_Scatterv(NULL, NULL, NULL, MPI_FLOAT,
         &valuesBuff,
@@ -182,26 +172,23 @@ int main (int argc, char* argv[]){
         MPI_COMM_WORLD);
   } // end if(myid == 0)
 
-  MPI_Barrier(MPI_COMM_WORLD);
 
   //Bcast the whole vector into vecBuffer
-  // if(myid == 0) print_buffer(std::string("BEFORE BCAST"), vecBuff, N);
-  MPI_Bcast(&vecBuff, N, MPI_FLOAT, 0, MPI_COMM_WORLD); //TODO: probably bug here
+  MPI_Bcast(&vecBuff, N, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
 
   /* Receiving objects */
   //Build Eigen local matrix based on valuesBuff
-  auto localMat = Eigen::Map<MatrixXf>(valuesBuff, localNbRows, N);
+  auto localMat = Eigen::Map<Matrix<float, -1, -1, Eigen::RowMajor>>(valuesBuff, localNbRows, N);
   //Build Eigen vector based on vecBuffer
   auto localVec = Eigen::Map<VectorXf>(vecBuff, N);
+  // std::cout << "localMatNorm:" << localMat.norm() << std::endl;
 
-  omp_set_num_threads(4);
-  Eigen::setNbThreads(4);
   //Compute partial Mv product
   VectorXf localRes = localMat * localVec;
 
+  //TODO : Add some computation (maybe compute local SVD with eigen ?)
   //TODO HERE : CALL NEURAL NETWORK
-
 
   if(myid == 0){
     float finalBuff[N];
@@ -217,8 +204,8 @@ int main (int argc, char* argv[]){
 
 
   VectorXf finalResult = Eigen::Map<VectorXf>(finalBuff, N);
-  std::cout << "\nFINAL NORM = "<< finalResult.norm() << std::endl;
-
+  if(__DEBUG) std::cout << "\nFINAL NORM = "<< finalResult.norm() << std::endl;
+  
   }
   else{
     MPI_Gatherv(localRes.data(),  //buffer_send,

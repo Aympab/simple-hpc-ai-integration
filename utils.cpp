@@ -12,6 +12,18 @@
     }                                                        \
   } while (0);
 
+
+void inline print_buffer(std::string infos, int* buffer, size_t N){
+  std::cout << "\nBUFFER " << infos << "=\n";
+  for (size_t i = 0; i<N; ++i){
+    std::cout << buffer[i];
+    if(i < N-1)
+      std::cout << ", ";
+    else
+      std::cout << std::endl;
+  }
+}
+
 const OrtApi* g_ort = NULL;
 
 int run_inference(OrtSession* session){//, const ORTCHAR_T* input_file, const ORTCHAR_T* output_file) {

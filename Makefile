@@ -13,10 +13,11 @@ EIGEN_DIR  = /net/jabba/home0/am611608/source/eigen
 ########################################################################
 COPTS     = -g -Wall
 CINCLUDES = -I$(EIGEN_DIR) \
-			#-I$(ONNX_DIR)/include
+			-fopenmp
+#-I$(ONNX_DIR)/include
 
 # CDEFS     = -DHAVE_CONFIG_H -DHYPRE_TIMING
-CFLAGS    = $(COPTS) $(CINCLUDES) $(CDEFS) -fopenmp
+CFLAGS    = $(COPTS) $(CINCLUDES) $(CDEFS)
 
 CXXOPTS   = $(COPTS) -Wno-deprecated
 CXXINCLUDES = $(CINCLUDES)
