@@ -4,6 +4,7 @@
 // #include <onnxruntime_cxx_api.h>
 #include <assert.h>
 #include <random>
+#include <algorithm>
 
 #include <stdint.h>
 #include <limits.h>
@@ -20,8 +21,6 @@
 #else
    #error "what is happening here?"
 #endif
-
-#define min(a,b) a<b?a:b
 
 using Eigen::MatrixXf;
 using Eigen::VectorXf;
@@ -85,10 +84,10 @@ int main (int argc, char* argv[]){
           pupper=0;
 
           plower = plocal_size*p;
-          plower += min(p, pextra);
+          plower += std::min(p, pextra);
 
           pupper = plocal_size*(p+1);
-          pupper += min(p+1, pextra);
+          pupper += std::min(p+1, pextra);
           pupper = pupper - 1;
 
           counts[p] = pupper - plower + 1;
