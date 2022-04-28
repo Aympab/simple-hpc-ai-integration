@@ -179,10 +179,13 @@ int main (int argc, char* argv[]){
 
   /* Receiving objects */
   //Build Eigen local matrix based on valuesBuff
-  auto localMat = Eigen::Map<Matrix<float, -1, -1, Eigen::RowMajor>>(valuesBuff, localNbRows, N);
+  auto localMat = Eigen::Map<Matrix<float, -1, -1, Eigen::RowMajor>>(
+                                                          valuesBuff,
+                                                          localNbRows,
+                                                          N);
+
   //Build Eigen vector based on vecBuffer
   auto localVec = Eigen::Map<VectorXf>(vecBuff, N);
-  // std::cout << "localMatNorm:" << localMat.norm() << std::endl;
 
   //Compute partial Mv product
   VectorXf localRes = localMat * localVec;
@@ -205,7 +208,7 @@ int main (int argc, char* argv[]){
 
   VectorXf finalResult = Eigen::Map<VectorXf>(finalBuff, N);
   if(__DEBUG) std::cout << "\nFINAL NORM = "<< finalResult.norm() << std::endl;
-  
+
   }
   else{
     MPI_Gatherv(localRes.data(),  //buffer_send,
