@@ -29,7 +29,7 @@ class Timer
       std::chrono::steady_clock::time_point m_start ;
     };
 
-    Timer(){}
+    Timer(const std::string &name) : m_name(name) {}
     virtual ~Timer(){}
 
     void add(std::string const& phase,double value)
@@ -42,17 +42,19 @@ class Timer
     }
 
     void printInfo() const {
-      std::cout<<"================================"<<std::endl ;
-      std::cout<<"PERF INFO : "<<std::endl ;
+      std::cout<<"================================"<<std::endl;
+      std::cout<<"PERF INFO " << m_name << " : "<<std::endl;
+      std::cout<<"--------------------------------"<<std::endl;
       for(auto const& iter : m_counters)
       {
-        std::cout<<iter.first<<":"<<iter.second<<std::endl ;
+        std::cout<<iter.first<<":"<<iter.second<<std::endl;
       }
-      std::cout<<"================================"<<std::endl ;
+      std::cout<<"================================"<<std::endl;
     }
 
   private :
     std::map<std::string,double> m_counters ;
+    const std::string m_name;
 };
 
 
