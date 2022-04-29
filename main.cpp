@@ -158,7 +158,7 @@ int main (int argc, char* argv[]){
     VectorXf tmpMv;
     {
       Timer::Sentry sentry(computeTimer,"GlobalMv");
-      tmpMv = M*v;
+      tmpMv = (M*v).eval();
     }
     savedNorm = tmpMv.norm();
 
@@ -224,10 +224,10 @@ int main (int argc, char* argv[]){
   VectorXf localRes; 
   {
     Timer::Sentry sentry(computeTimer,"LocalMv");
-    localRes = localMat * localVec;
+    localRes = (localMat * localVec).eval();
   }
   //TODO : Add some computation (maybe compute local SVD with eigen ?)
-  //TODO HERE : CALL NEURAL NETWORK
+  //TODO HERE : CALL NEURAL NETWORK (and time it)
 
   if(myid == 0){
     float finalBuff[N];
@@ -250,7 +250,7 @@ int main (int argc, char* argv[]){
 
     //epsilon == 10e-16, doesn't pass the assertion like 70% of the time
     // assert(abs(finalNorm - savedNorm) <= std::numeric_limits<double>::epsilon());
-    assert(abs(finalNorm - savedNorm) <= 10e-3);
+    assert(abs(finalNorm - savedNorm) <= 0.1);
   }
   else{
     MPI_Gatherv(localRes.data(),  //buffer_send,
@@ -265,10 +265,24 @@ int main (int argc, char* argv[]){
   }
 
   if(myid==0){
-    computeTimer.printInfo();
     initTimer.printInfo();
     mpiTimer.printInfo();
+    computeTimer.printInfo();
+
+    std::cout << "\nSEQUENTIAL COMPUTATION : " \
+              << computeTimer.get_perf("GlobalMv")
+              << std::endl;
+
+    double mpiTime = computeTimer.get_perf("LocalMv")
+                    // + mpiTimer.get_perf("BcastVector")
+                    + mpiTimer.get_perf("MPIScatterV")
+                    + mpiTimer.get_perf("MPIGatherV");
+
+    std::cout << "MPI COMPUTATION : " \
+              << mpiTime
+              << std::endl;
   }
+
   /* Finalize MPI */
   MPI_Finalize();
   return 0;

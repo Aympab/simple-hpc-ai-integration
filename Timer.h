@@ -41,6 +41,10 @@ class Timer
         iter->second += value ;
     }
 
+    double get_perf(std::string const& phase){
+      return m_counters[phase];
+    }
+
     void printInfo() const {
       std::cout<<"================================"<<std::endl;
       std::cout<<"PERF INFO " << m_name << " : "<<std::endl;
