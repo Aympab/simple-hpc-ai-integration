@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <random>
 #include <algorithm>
+#include "Timer.h"
 
 // #include <stdint.h>
 // #include <limits.h>
@@ -19,7 +20,7 @@
 #elif SIZE_MAX == ULLONG_MAX
    #define my_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
 #else
-   #error "what is happening here?"
+   #error "SIZE_MAX doesn't correspond to any MAX"
 #endif
 
 using Eigen::MatrixXf;
@@ -35,7 +36,9 @@ int main (int argc, char* argv[]){
   /* Initialization */
   int myid, nb_procs;
   size_t N;
-  float savedNorm;
+  double savedNorm = -1.0;
+  double finalNorm = -1.5;
+  Timer timer;
 
   omp_set_num_threads(4);
   Eigen::setNbThreads(4);
@@ -88,6 +91,7 @@ int main (int argc, char* argv[]){
   displacements_final[0] = 0;
   if(myid == 0)
   {
+     Timer::Sentry sentry(timer,"SetupMPI");
     //Filling the counts and offset arrays for MPI_ScatterV and GatherV
       int plocal_size = N/nb_procs;
       int pextra = N - plocal_size*nb_procs;
@@ -136,27 +140,42 @@ int main (int argc, char* argv[]){
     std::mt19937 gen(rd());
     std::uniform_real_distribution<double> uniform(-1.0, 1.0);
 
-    Matrix<float, -1, -1, Eigen::RowMajor> M = MatrixXf::
-                                                NullaryExpr(
-                                                  N, N,
-                                                  [&](){return uniform(gen)*50;}
-                                                );
-    Vector<float, -1> v = VectorXf::NullaryExpr(N,[&](){return uniform(gen);});
+    Matrix<float, -1, -1, Eigen::RowMajor> M;
+    {
+      Timer::Sentry sentry(timer,"InitMatrix");
+      M = MatrixXf::NullaryExpr(N, N,[&](){return uniform(gen)*50;});
+    }
 
-    savedNorm = (M*v).norm();
+    Vector<float, -1> v;
+    {
+      Timer::Sentry sentry(timer,"InitVector");
+      v = VectorXf::NullaryExpr(N,[&](){return uniform(gen);});
+    }
+
+    //We use tmpMv so we can time without the norm computation
+    VectorXf tmpMv;
+    {
+      Timer::Sentry sentry(timer,"GlobalMv");
+      tmpMv = M*v;
+    }
+    savedNorm = tmpMv.norm();
+
     if(__DEBUG) std::cout << "True norm : " << savedNorm << std::endl;
 
     /* Send matrix to other proc */
-    MPI_Scatterv(
-        M.data(),         //buffer_send
-        counts,           //number of elements to send to each proc
-        displacements,    //displacement to each process
-        MPI_FLOAT,        //type send
-        &valuesBuff,      //buffer to receive valuesBuff
-        localNbRows*N,    //number of elements on the reveive buffer
-        MPI_FLOAT,        //datatype receive
-        0,                //root MPI ID
-        MPI_COMM_WORLD);
+    {
+      Timer::Sentry sentry(timer,"MPIScatterV");
+      MPI_Scatterv(
+          M.data(),         //buffer_send
+          counts,           //number of elements to send to each proc
+          displacements,    //displacement to each process
+          MPI_FLOAT,        //type send
+          &valuesBuff,      //buffer to receive valuesBuff
+          localNbRows*N,    //number of elements on the reveive buffer
+          MPI_FLOAT,        //datatype receive
+          0,                //root MPI ID
+          MPI_COMM_WORLD);
+    }
 
     /* Setup to send the whole vector, going to use this in Bcast */
     // vecBuff = v.data(); //TODO : NO IDEA WHY JUST THIS DOESN'T WORK ????
@@ -178,41 +197,53 @@ int main (int argc, char* argv[]){
   //Bcast the whole vector into vecBuffer
   MPI_Bcast(&vecBuff, N, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
-
-  /* Receiving objects */
-  //Build Eigen local matrix based on valuesBuff
-  auto localMat = Eigen::Map<Matrix<float, -1, -1, Eigen::RowMajor>>(
+  MatrixXf localMat;
+  {
+    Timer::Sentry sentry(timer,"InitLocalMatrix");
+    /* Receiving objects */
+    //Build Eigen local matrix based on valuesBuff
+    localMat = Eigen::Map<Matrix<float, -1, -1, Eigen::RowMajor>>(
                                                           valuesBuff,
                                                           localNbRows,
                                                           N);
+  }
 
-  //Build Eigen vector based on vecBuffer
-  auto localVec = Eigen::Map<VectorXf>(vecBuff, N);
+  VectorXf localVec;
+  {
+    Timer::Sentry sentry(timer,"InitLocalVector");
+    //Build Eigen vector based on vecBuffer
+    localVec = Eigen::Map<VectorXf>(vecBuff, N);
+  }
 
   //Compute partial Mv product
-  VectorXf localRes = localMat * localVec;
-
+  VectorXf localRes; 
+  {
+    Timer::Sentry sentry(timer,"LocalMv");
+    localRes = localMat * localVec;
+  }
   //TODO : Add some computation (maybe compute local SVD with eigen ?)
   //TODO HERE : CALL NEURAL NETWORK
 
   if(myid == 0){
     float finalBuff[N];
-    MPI_Gatherv(localRes.data(),      //const void* buffer_send,
-                localNbRows,          //int count_send,
-                MPI_FLOAT,            //MPI_Datatype datatype_send,
-                &finalBuff,           //void* buffer_recv,
-                counts_final,         //const int* counts_recv,
-                displacements_final,  //const int* displacements,
-                MPI_FLOAT,            //MPI_Datatype datatype_recv,
-                0,                    //int root,
-                MPI_COMM_WORLD);      //MPI_Comm communicator);
-
+    {
+      Timer::Sentry sentry(timer,"MPIGatherV");
+      MPI_Gatherv(localRes.data(),      //const void* buffer_send,
+                  localNbRows,          //int count_send,
+                  MPI_FLOAT,            //MPI_Datatype datatype_send,
+                  &finalBuff,           //void* buffer_recv,
+                  counts_final,         //const int* counts_recv,
+                  displacements_final,  //const int* displacements,
+                  MPI_FLOAT,            //MPI_Datatype datatype_recv,
+                  0,                    //int root,
+                  MPI_COMM_WORLD);      //MPI_Comm communicator);
+    }
 
     VectorXf finalResult = Eigen::Map<VectorXf>(finalBuff, N);
-
-    if(__DEBUG) std::cout << "\nFINAL NORM = "<< finalResult.norm() << std::endl;
-    
-    assert(finalResult.norm() == savedNorm);
+    finalNorm = finalResult.norm();
+    if(__DEBUG) std::cout << "FINAL NORM = "<< finalNorm << std::endl;
+    std::cout << "epsilon=" << std::numeric_limits<double>::epsilon()<<std::endl;
+    assert(abs(finalNorm - savedNorm) <= 10e6*std::numeric_limits<double>::epsilon());
   }
   else{
     MPI_Gatherv(localRes.data(),  //buffer_send,
@@ -226,6 +257,7 @@ int main (int argc, char* argv[]){
                 MPI_COMM_WORLD);  //communicator
   }
 
+  if(myid==0) timer.printInfo();
   /* Finalize MPI */
   MPI_Finalize();
   return 0;
