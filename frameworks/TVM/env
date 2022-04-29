@@ -1,0 +1,3 @@
+export TVM_HOME=/net/jabba/home0/am611608/source/tvm
+export PYTHONPATH=$TVM_HOME/python:${PYTHONPATH}
+alias tvmc='python -m tvm.driver.tvmc'

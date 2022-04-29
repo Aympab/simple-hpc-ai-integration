@@ -34,7 +34,7 @@ class Timer
 
     void add(std::string const& phase,double value)
     {
-      auto iter = m_counters.find(phase) ;
+      auto iter = m_counters.find(phase);
       if(iter==m_counters.end())
         m_counters[phase] = value ;
       else
