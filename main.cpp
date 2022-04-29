@@ -93,7 +93,7 @@ int main (int argc, char* argv[]){
   displacements_final[0] = 0;
   if(myid == 0)
   {
-     Timer::Sentry sentry(initTimer,"SetupCountsDisplacements");
+     Timer::Sentry sentry(initTimer, "SetupCountsDisplacements");
     //Filling the counts and offset arrays for MPI_ScatterV and GatherV
       int plocal_size = N/nb_procs;
       int pextra = N - plocal_size*nb_procs;
@@ -248,9 +248,8 @@ int main (int argc, char* argv[]){
     finalNorm = finalResult.norm();
     if(__DEBUG) std::cout << "FINAL NORM = "<< finalNorm << std::endl;
 
-    //epsilon == 10e-16, doesn't pass the assertion like 70% of the time
-    // assert(abs(finalNorm - savedNorm) <= std::numeric_limits<double>::epsilon());
-    assert(abs(finalNorm - savedNorm) <= 0.1);
+    assert(abs(finalNorm - savedNorm) <= std::numeric_limits<float>::epsilon());
+    // assert(abs(finalNorm - savedNorm) <= 0.1);
   }
   else{
     MPI_Gatherv(localRes.data(),  //buffer_send,

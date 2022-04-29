@@ -3,3 +3,5 @@
 misc/*
 venv/
 main
+external/eigen
+build/
