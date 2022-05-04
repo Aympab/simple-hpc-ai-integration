@@ -229,6 +229,13 @@ int main (int argc, char* argv[]){
   //TODO : Add some computation (maybe compute local SVD with eigen ?)
   //TODO HERE : CALL NEURAL NETWORK (and time it)
 
+  //Eigen::JacobiSVD<MatrixXf, Eigen::ComputeThinU | Eigen::ComputeThinV> svd(localMat);
+  //svd.singularValues();
+  //svd.matrixU();
+  //svd.matrixV();
+
+  //std::cout << "Its singular values are:" << std::endl << svd.singularValues() << std::endl;
+
   if(myid == 0){
     float finalBuff[N];
     {
