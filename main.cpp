@@ -7,6 +7,12 @@
 #include <algorithm>
 #include "Timer.h"
 
+//IF DEF TVM :
+#include <tvm/runtime/module.h>
+#include <tvm/runtime/packed_func.h>
+#include <tvm/runtime/registry.h>
+//END IF
+
 // #include <stdint.h>
 // #include <limits.h>
 #if SIZE_MAX == UCHAR_MAX
@@ -28,7 +34,6 @@ using Eigen::VectorXf;
 using Eigen::Map;
 using Eigen::Matrix;
 using Eigen::Vector;
-
 
 #define __DEBUG 1
 
