@@ -58,16 +58,74 @@ static const OrtApi* g_ort = NULL;
   } while (0);
 
 int run_inference(OrtSession* session){
+  float model_input[8] = {1.3,2.,1.,1.75,1.,1.,1.,1.};
+
   OrtMemoryInfo* memory_info;
   ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator,
                                                 OrtMemTypeDefault,
                                                 &memory_info));
 
-  const int64_t input_shape[] = {1, 1, 8, 1};
-  const size_t input_shape_len = sizeof(input_shape) / sizeof(input_shape[0]);
+  // const int64_t input_shape[] = {1, 8, 1, 1};
+  const int64_t input_shape[] = {1, 8};
+  // const size_t input_shape_len = sizeof(input_shape) / sizeof(input_shape[0]);
+  const size_t input_shape_len = 2;
+  const size_t model_input_len = 8 * sizeof(float);
 
   std::cout << "Input shape len is : " << input_shape_len << std::endl; 
-  // const size_t model_input_len = model_input_ele_count * sizeof(float);
+
+  OrtValue* input_tensor = NULL;
+  ORT_ABORT_ON_ERROR(g_ort->CreateTensorWithDataAsOrtValue(
+                                            memory_info,
+                                            model_input,
+                                            model_input_len,
+                                            input_shape,
+                                            input_shape_len,
+                                            ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
+                                            &input_tensor));
+
+  assert(input_tensor != NULL);
+  int is_tensor;
+  ORT_ABORT_ON_ERROR(g_ort->IsTensor(input_tensor, &is_tensor));
+  assert(is_tensor);
+
+  g_ort->ReleaseMemoryInfo(memory_info);
+  const char* input_names[] = {"input.1"};
+  const char* output_names[] = {"10"};
+
+  std::array<float, 1> results_{};
+  int result_{0};
+  const int64_t output_shape[] = {1,1};
+  const size_t output_shape_len = sizeof(output_shape) / sizeof(output_shape[0]);
+
+  OrtValue* output_tensor = NULL;
+  ORT_ABORT_ON_ERROR(g_ort->CreateTensorWithDataAsOrtValue(
+                                memory_info,
+                                results_.data(),
+                                results_.size()*sizeof(float),
+                                output_shape,
+                                output_shape_len,
+                                ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
+                                &output_tensor));
+
+
+  ORT_ABORT_ON_ERROR(
+      g_ort->Run(session,
+                 NULL,
+                 input_names,
+                 (const OrtValue* const*)&input_tensor,
+                 1,
+                 output_names,
+                 1,
+                 &output_tensor));
+
+  assert(output_tensor != NULL);
+  ORT_ABORT_ON_ERROR(g_ort->IsTensor(output_tensor, &is_tensor));
+  assert(is_tensor);
+
+  std::cout << "RESULTS : \n";
+  for (size_t i = 0; i < results_.size(); i++) {
+   std::cout << i << " : " << results_[i] << std::endl;
+  }
 
   return 0;
 }
@@ -246,6 +304,9 @@ int main (int argc, char* argv[]){
   } // end if(myid == 0)
 
 
+/*******************************************************************************
+****************************** LOCAL COMPUTATIONS ******************************
+*******************************************************************************/
   {
     Timer::Sentry sentry(mpiTimer, "BcastVector");
     //Bcast the whole vector into vecBuffer
@@ -277,7 +338,10 @@ int main (int argc, char* argv[]){
     localRes = (localMat * localVec).eval();
   }
   //TODO : Add some computation (maybe compute local SVD with eigen ?)
-  //TODO HERE : CALL NEURAL NETWORK (and time it)
+
+/*******************************************************************************
+******************************** NN INFERENCE **********************************
+*******************************************************************************/
   g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
 
   ORTCHAR_T* model_path = "./models/toymodel/toy-model.onnx";
@@ -290,7 +354,7 @@ int main (int argc, char* argv[]){
   ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path, session_options, &session));
   // verify_input_output_count(session);
   int ret = run_inference(session);
-
+/********************************* END NN CALL ********************************/
 
 
   Eigen::JacobiSVD<MatrixXf, Eigen::ComputeThinU | Eigen::ComputeThinV> 
@@ -337,7 +401,7 @@ int main (int argc, char* argv[]){
   }
 
   if(myid==0){
-    std::cout << "\n\n=========================================\nTIMERS :"
+    std::cout << "\n\n=========================================\nTIMERS :\n";
     initTimer.printInfo();
     mpiTimer.printInfo();
     computeTimer.printInfo();
