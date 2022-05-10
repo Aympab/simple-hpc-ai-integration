@@ -88,22 +88,29 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 include(summary)
 include(colors)
 find_package(MPI REQUIRED)
+set(tvm_DIR "/net/jabba/home0/am611608/source/tvm/build")
+find_package(tvm REQUIRED)
 # include(flog)
 
 # Output configuration summary
-summary_header()
+# summary_header()
 
-summary_info("CMAKE_INSTALL_PREFIX" "${CMAKE_INSTALL_PREFIX}" TRUE)
-summary_info("CMAKE_PREFIX_PATH" "${CMAKE_PREFIX_PATH}" TRUE)
 
-string(APPEND _summary "\n")
-summary_info("CMAKE_CXX_COMPILER" "${CMAKE_CXX_COMPILER}" TRUE)
-summary_info("EIGEN3_VERSION" "${EIGEN3_VERSION}" TRUE)
+# summary_info("CMAKE_INSTALL_PREFIX" "${CMAKE_INSTALL_PREFIX}" TRUE)
+# summary_info("CMAKE_PREFIX_PATH" "${CMAKE_PREFIX_PATH}" TRUE)
 
-string(APPEND _summary "\n")
-summary_option("HELLO_ENABLE_OPTION" ${HELLO_ENABLE_OPTION} "")
+# string(APPEND _summary "\n")
+# summary_info("CMAKE_CXX_COMPILER" "${CMAKE_CXX_COMPILER}" TRUE)
+# summary_info("EIGEN3_VERSION" "${EIGEN3_VERSION}" TRUE)
 
-message(STATUS ${_summary})
+
+# -Dtvm_DIR=/home/cea/am611608/source/tvm/include
+
+
+# string(APPEND _summary "\n")
+# summary_option("HELLO_ENABLE_OPTION" ${HELLO_ENABLE_OPTION} "")
+
+# message(STATUS ${_summary})
 
 #------------------------------------------------------------------------------#
 # Main

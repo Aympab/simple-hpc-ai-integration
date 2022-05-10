@@ -1,20 +1,19 @@
 #include <iostream>
 #include <mpi.h>
 #include <Eigen/Dense>
-// #include <onnxruntime_cxx_api.h>
+#include <onnxruntime_cxx_api.h>
 #include <assert.h>
 #include <random>
 #include <algorithm>
 #include "Timer.h"
 
 //IF DEF TVM :
-#include <tvm/runtime/module.h>
-#include <tvm/runtime/packed_func.h>
-#include <tvm/runtime/registry.h>
+// #include <tvm/runtime/module.h>
+// #include <tvm/runtime/packed_func.h>
+// #include <tvm/runtime/registry.h>
 //END IF
+// #include "utils-tvm.h"
 
-// #include <stdint.h>
-// #include <limits.h>
 #if SIZE_MAX == UCHAR_MAX
    #define my_MPI_SIZE_T MPI_UNSIGNED_CHAR
 #elif SIZE_MAX == USHRT_MAX
@@ -36,7 +35,51 @@ using Eigen::Matrix;
 using Eigen::Vector;
 
 #define __DEBUG 1
+#define NB_THREAD 8
 
+/*******************************************************************************
+********************************************************************************
+********************************************************************************
+**************************    ONNX RUNTIME    **********************************
+********************************************************************************
+********************************************************************************
+*******************************************************************************/
+static const OrtApi* g_ort = NULL;
+
+#define ORT_ABORT_ON_ERROR(expr)                             \
+  do {                                                       \
+    OrtStatus* onnx_status = (expr);                         \
+    if (onnx_status != NULL) {                               \
+      const char* msg = g_ort->GetErrorMessage(onnx_status); \
+      std::cout << msg << std::endl;                         \
+      g_ort->ReleaseStatus(onnx_status);                     \
+      abort();                                               \
+    }                                                        \
+  } while (0);
+
+int run_inference(OrtSession* session){
+  OrtMemoryInfo* memory_info;
+  ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator,
+                                                OrtMemTypeDefault,
+                                                &memory_info));
+
+  const int64_t input_shape[] = {1, 1, 8, 1};
+  const size_t input_shape_len = sizeof(input_shape) / sizeof(input_shape[0]);
+
+  std::cout << "Input shape len is : " << input_shape_len << std::endl; 
+  // const size_t model_input_len = model_input_ele_count * sizeof(float);
+
+  return 0;
+}
+
+
+/*******************************************************************************
+********************************************************************************
+********************************************************************************
+**************************    MAIN PROGRAM    **********************************
+********************************************************************************
+********************************************************************************
+*******************************************************************************/
 int main (int argc, char* argv[]){
   /* Initialization */
   int myid, nb_procs;
@@ -47,8 +90,8 @@ int main (int argc, char* argv[]){
   Timer computeTimer("Computation");
   Timer mpiTimer("MPI communications");
 
-  omp_set_num_threads(4);
-  Eigen::setNbThreads(4);
+  omp_set_num_threads(NB_THREAD);
+  Eigen::setNbThreads(NB_THREAD);
 
   /* Initialize MPI */
   MPI_Init(&argc, &argv);
@@ -61,6 +104,8 @@ int main (int argc, char* argv[]){
       N = atoi(argv[1]);
       if(N <= 0){
         // MPI_Finalize(); TODO CANNOT DO THIS BECAUSE EVERY ONE NEEDS TO CALL MPI FINALIZE : HOW TO THROW ERROR WELL ??
+        // int errorcode;
+        // MPI_Abort(MPI_Comm comm, int errorcode)
         throw std::invalid_argument("N must be an integer > 0.");
       }
       std::cout << "Running with matrix size N = " << N << std::endl;
@@ -233,11 +278,26 @@ int main (int argc, char* argv[]){
   }
   //TODO : Add some computation (maybe compute local SVD with eigen ?)
   //TODO HERE : CALL NEURAL NETWORK (and time it)
+  g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
 
-  //Eigen::JacobiSVD<MatrixXf, Eigen::ComputeThinU | Eigen::ComputeThinV> svd(localMat);
-  //svd.singularValues();
-  //svd.matrixU();
-  //svd.matrixV();
+  ORTCHAR_T* model_path = "./models/toymodel/toy-model.onnx";
+
+  OrtEnv* env;
+  ORT_ABORT_ON_ERROR(g_ort->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "myenv", &env));
+  OrtSessionOptions* session_options;
+  ORT_ABORT_ON_ERROR(g_ort->CreateSessionOptions(&session_options));
+  OrtSession* session;
+  ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path, session_options, &session));
+  // verify_input_output_count(session);
+  int ret = run_inference(session);
+
+
+
+  Eigen::JacobiSVD<MatrixXf, Eigen::ComputeThinU | Eigen::ComputeThinV> 
+    svd(localMat);
+  svd.singularValues();
+  svd.matrixU();
+  svd.matrixV();
 
   //std::cout << "Its singular values are:" << std::endl << svd.singularValues() << std::endl;
 
@@ -277,6 +337,7 @@ int main (int argc, char* argv[]){
   }
 
   if(myid==0){
+    std::cout << "\n\n=========================================\nTIMERS :"
     initTimer.printInfo();
     mpiTimer.printInfo();
     computeTimer.printInfo();

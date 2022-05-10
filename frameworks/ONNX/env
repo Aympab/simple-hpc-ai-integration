@@ -1,1 +1,1 @@
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/source/simple-hpc/external/onnxruntime/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/cea/am611608/local/onnxruntime-linux-x64-1.11.0
