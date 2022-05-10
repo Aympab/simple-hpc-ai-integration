@@ -18,6 +18,14 @@ Append the `LD_LIBRARY_PATH` variable with the lib of onnxruntine :
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/source/simple-hpc/external/onnxruntime/lib/
 ```
 
+### Converting a TF model to ONNX with **tf2onnx**
+See the [tf2onnx](https://github.com/onnx/tensorflow-onnx) GitHub page to
+convert a `saved_mode.pb` from tensorflow to ONNX format.
+
+```
+$ python -m tf2onnx.convert --saved-model tf/model/path --output saved_model.onnx
+```
+
 ## TVM
 Install the library and set everything up with [TVM's user tutorial](https://tvm.apache.org/docs/tutorial/index.html).
 

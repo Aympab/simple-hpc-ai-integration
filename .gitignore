@@ -6,3 +6,4 @@ main
 external/eigen
 build/
 resnet/
+models/sampo-model
