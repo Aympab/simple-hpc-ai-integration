@@ -66,13 +66,14 @@ int run_inference(OrtSession* session){
                                                 &memory_info));
 
   // const int64_t input_shape[] = {1, 8, 1, 1};
-  const int64_t input_shape[] = {1, 8};
+  const int64_t input_shape[] = {1, 8}; //1 is for the batch size
   // const size_t input_shape_len = sizeof(input_shape) / sizeof(input_shape[0]);
-  const size_t input_shape_len = 2;
-  const size_t model_input_len = 8 * sizeof(float);
+  const size_t input_shape_len = 2; //Not sure
+  const size_t model_input_len = 8 * sizeof(float); //We have 8 floats
 
   std::cout << "Input shape len is : " << input_shape_len << std::endl; 
 
+  //Create an ORT Tensor that will be used by the ONNX Runtime
   OrtValue* input_tensor = NULL;
   ORT_ABORT_ON_ERROR(g_ort->CreateTensorWithDataAsOrtValue(
                                             memory_info,
@@ -89,12 +90,12 @@ int run_inference(OrtSession* session){
   assert(is_tensor);
 
   g_ort->ReleaseMemoryInfo(memory_info);
-  const char* input_names[] = {"input.1"};
+  const char* input_names[] = {"input.1"}; //Name in the ONNX model
   const char* output_names[] = {"10"};
 
   std::array<float, 1> results_{};
   int result_{0};
-  const int64_t output_shape[] = {1,1};
+  const int64_t output_shape[] = {1,1}; //Output shape with batchsize
   const size_t output_shape_len = sizeof(output_shape) / sizeof(output_shape[0]);
 
   OrtValue* output_tensor = NULL;
@@ -127,7 +128,11 @@ int run_inference(OrtSession* session){
    std::cout << i << " : " << results_[i] << std::endl;
   }
 
-  return 0;
+  int ret = 0;
+  g_ort->ReleaseValue(output_tensor);
+  g_ort->ReleaseValue(input_tensor);
+  // free(model_input);
+  return ret;
 }
 
 
