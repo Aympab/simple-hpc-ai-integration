@@ -1,3 +1,3 @@
 #!/bin/bash
-#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/cea/am611608/local/onnxruntime-linux-x64-1.11.0
-/net/jabba/home0/am611608/source/simple-hpc/external/onnxruntime
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/net/jabba/home0/am611608/local/onnxruntime-linux-x64-1.11.0/lib
+# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/net/jabba/home0/am611608/source/simple-hpc/external/onnxruntime

@@ -57,8 +57,8 @@ static const OrtApi* g_ort = NULL;
     }                                                        \
   } while (0);
 
-int run_inference(OrtSession* session){
-  float model_input[8] = {1.3,2.,1.,1.75,1.,1.,1.,1.};
+int run_inference(OrtSession *__restrict session, float *__restrict model_input){
+  // float model_input[8] = {1.3,2.,1.,1.75,1.,1.,1.,1.};
 
   OrtMemoryInfo* memory_info;
   ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator,
@@ -71,7 +71,7 @@ int run_inference(OrtSession* session){
   const size_t input_shape_len = 2; //Not sure
   const size_t model_input_len = 8 * sizeof(float); //We have 8 floats
 
-  std::cout << "Input shape len is : " << input_shape_len << std::endl; 
+  // std::cout << "Input shape len is : " << input_shape_len << std::endl; 
 
   //Create an ORT Tensor that will be used by the ONNX Runtime
   OrtValue* input_tensor = NULL;
@@ -358,7 +358,16 @@ int main (int argc, char* argv[]){
   OrtSession* session;
   ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path, session_options, &session));
   // verify_input_output_count(session);
-  int ret = run_inference(session);
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<float> uniform(-1.0, 1.0);
+
+  float randArray[8];
+  for(int i=0;i<8;i++)
+    randArray[i]=uniform(gen)*10;  //Generate number between 0 to 99
+
+  int ret = run_inference(session, randArray);
 /********************************* END NN CALL ********************************/
 
 
