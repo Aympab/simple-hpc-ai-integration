@@ -1,3 +1,7 @@
+#For debugging we need to append path when running the file + module load
+import sys
+sys.path.insert(0,'/net/jabba/home0/am611608/source/tvm/python')
+
 # tvm, relay
 import tvm
 from tvm import te
@@ -84,16 +88,18 @@ model_path = model_url
 # Import model
 # ------------
 # Creates tensorflow graph definition from protobuf file.
-
+# model = tf.keras.models.load_model(repo_base, compile=True)
+tf.saved_model.load(repo_base)
 with tf_compat_v1.gfile.GFile(model_path, "rb") as f:
     graph_def = tf_compat_v1.GraphDef()
-    graph_def.ParseFromString(f.read())
+    s=f.read()
+    graph_def.ParseFromString(s)
     graph = tf.import_graph_def(graph_def, name="")
     # Call the utility to import the graph definition into default graph.
     graph_def = tf_testing.ProcessGraphDefParam(graph_def)
     # Add shapes to the graph.
-    with tf_compat_v1.Session() as sess:
-        graph_def = tf_testing.AddShapesToGraphDef(sess, "softmax")
+    # with tf_compat_v1.Session() as sess:
+        # graph_def = tf_testing.AddShapesToGraphDef(sess, "softmax")
 
 ######################################################################
 # Decode image
@@ -227,3 +233,4 @@ with tf_compat_v1.gfile.GFile(model_path, "rb") as f:
 
 
 # run_inference_on_image(img_path)
+print("Done !")

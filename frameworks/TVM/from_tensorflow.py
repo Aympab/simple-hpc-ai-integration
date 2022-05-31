@@ -23,6 +23,14 @@ For us to begin with, tensorflow python module is required to be installed.
 
 Please refer to https://www.tensorflow.org/install
 """
+import sys
+sys.path.insert(0,'/net/jabba/home0/am611608/source/tvm/python')
+# export TVM_HOME=/net/jabba/home0/am611608/source/tvm
+# export PYTHONPATH=${PYTHONPATH}:$TVM_HOME/python
+import os
+
+# os.environ['LD_LIBRARY_PATH'] = "/net/jabba/home0/am611608/source/tvm"
+# os.environ['TVM_HOME'] = "/net/jabba/home0/am611608/source/tvm"
 
 # tvm, relay
 import tvm
