@@ -14,21 +14,6 @@ import os.path
 # Tensorflow imports
 import tensorflow as tf
 
-
-# # Ask tensorflow to limit its GPU memory to what's actually needed
-# # instead of gobbling everything that's available.
-# # https://www.tensorflow.org/guide/gpu#limiting_gpu_memory_growth
-# # This way this tutorial is a little more friendly to sphinx-gallery.
-# gpus = tf.config.list_physical_devices("GPU")
-# if gpus:
-#     try:
-#         for gpu in gpus:
-#             tf.config.experimental.set_memory_growth(gpu, True)
-#         print("tensorflow will use experimental.set_memory_growth(True)")
-#     except RuntimeError as e:
-#         print("experimental.set_memory_growth option is not available: {}".format(e))
-
-
 try:
     tf_compat_v1 = tf.compat.v1
 except ImportError:
@@ -38,30 +23,11 @@ except ImportError:
 import tvm.relay.testing.tf as tf_testing
 
 # Base location for model related files.
-# repo_base = "https://github.com/dmlc/web-data/raw/main/tensorflow/models/InceptionV1/"
-repo_base = "/net/jabba/home0/am611608/source/simple-hpc/models/sampo-model/cas_test/nn/mutation_toy_case_best"
+repo_base = "/net/jabba/home0/am611608/source/SAMPO/cas_test/nn/mutation_toy_case_best"
 
-# Test image
-# img_name = "elephant-299.jpg"
-# image_url = os.path.join(repo_base, img_name)
-
-######################################################################
-# Tutorials
-# ---------
-# Please refer docs/frontend/tensorflow.md for more details for various models
-# from tensorflow.
-
-# model_name = "classify_image_graph_def-with_shapes.pb"
 model_name = "saved_model.pb"
 model_url = os.path.join(repo_base, model_name)
 
-# # Image label map
-# map_proto = "imagenet_2012_challenge_label_map_proto.pbtxt"
-# map_proto_url = os.path.join(repo_base, map_proto)
-
-# # Human readable text for labels
-# label_map = "imagenet_synset_to_human_label_map.txt"
-# label_map_url = os.path.join(repo_base, label_map)
 
 # Target settings
 # Use these commented settings to build for cuda.
@@ -72,28 +38,18 @@ target = tvm.target.Target("llvm", host="llvm")
 layout = None
 dev = tvm.cpu(0)
 
-######################################################################
-# Download required files
-# -----------------------
-# Download files listed above.
-# from tvm.contrib.download import download_testdata
-
-# img_path = download_testdata(image_url, img_name, module="data")
-# model_path = download_testdata(model_url, model_name, module=["tf", "InceptionV1"])
 model_path = model_url
-# map_proto_path = download_testdata(map_proto_url, map_proto, module="data")
-# label_path = download_testdata(label_map_url, label_map, module="data")
+
 
 ######################################################################
 # Import model
 # ------------
 # Creates tensorflow graph definition from protobuf file.
-# model = tf.keras.models.load_model(repo_base, compile=True)
-tf.saved_model.load(repo_base)
+# model = tf.keras.models.load_model(repo_base, compile=False)
+# tf.saved_model.load(repo_base)
 with tf_compat_v1.gfile.GFile(model_path, "rb") as f:
     graph_def = tf_compat_v1.GraphDef()
-    s=f.read()
-    graph_def.ParseFromString(s)
+    graph_def.ParseFromString(f.read())
     graph = tf.import_graph_def(graph_def, name="")
     # Call the utility to import the graph definition into default graph.
     graph_def = tf_testing.ProcessGraphDefParam(graph_def)
@@ -101,33 +57,19 @@ with tf_compat_v1.gfile.GFile(model_path, "rb") as f:
     # with tf_compat_v1.Session() as sess:
         # graph_def = tf_testing.AddShapesToGraphDef(sess, "softmax")
 
+
+
 ######################################################################
-# Decode image
-# ------------
-# .. note::
+# Import the graph to Relay
+# -------------------------
+# Import tensorflow graph definition to relay frontend.
 #
-#   tensorflow frontend import doesn't support preprocessing ops like JpegDecode.
-#   JpegDecode is bypassed (just return source node).
-#   Hence we supply decoded frame to TVM instead.
-# #
-
-# from PIL import Image
-
-# image = Image.open(img_path).resize((299, 299))
-
-# x = np.array(image)
-
-# ######################################################################
-# # Import the graph to Relay
-# # -------------------------
-# # Import tensorflow graph definition to relay frontend.
-# #
-# # Results:
-# #   sym: relay expr for given tensorflow protobuf.
-# #   params: params converted from tensorflow params (tensor protobuf).
+# Results:
+#   sym: relay expr for given tensorflow protobuf.
+#   params: params converted from tensorflow params (tensor protobuf).
 # shape_dict = {"DecodeJpeg/contents": x.shape}
 # dtype_dict = {"DecodeJpeg/contents": "uint8"}
-# mod, params = relay.frontend.from_tensorflow(graph_def, layout=layout, shape=shape_dict)
+# mod, params = relay.frontend.from_tensorflow(graph_def, layout=layout)#, shape=shape_dict)
 
 # print("Tensorflow protobuf imported to relay frontend.")
 # ######################################################################

@@ -30,7 +30,7 @@ sys.path.insert(0,'/net/jabba/home0/am611608/source/tvm/python')
 import os
 
 # os.environ['LD_LIBRARY_PATH'] = "/net/jabba/home0/am611608/source/tvm"
-# os.environ['TVM_HOME'] = "/net/jabba/home0/am611608/source/tvm"
+os.environ['TVM_HOME'] = "/net/jabba/home0/am611608/source/tvm"
 
 # tvm, relay
 import tvm
