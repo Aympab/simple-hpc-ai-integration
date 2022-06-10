@@ -45,7 +45,7 @@ model_path = model_url
 # Import model
 # ------------
 # Creates tensorflow graph definition from protobuf file.
-# model = tf.keras.models.load_model(repo_base, compile=False)
+model = tf.keras.models.load_model(repo_base, compile=False)
 # tf.saved_model.load(repo_base)
 with tf_compat_v1.gfile.GFile(model_path, "rb") as f:
     graph_def = tf_compat_v1.GraphDef()
