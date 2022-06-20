@@ -12,7 +12,7 @@ import numpy as np
 import os.path
 
 # Tensorflow imports
-import tensorflow as tf
+import tensorflow as tf 
 
 try:
     tf_compat_v1 = tf.compat.v1
