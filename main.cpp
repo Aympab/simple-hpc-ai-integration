@@ -66,10 +66,10 @@ int run_inference(OrtSession *__restrict session, float *__restrict model_input)
                                                 &memory_info));
 
   // const int64_t input_shape[] = {1, 8, 1, 1};
-  const int64_t input_shape[] = {1, 8}; //1 is for the batch size
-  // const size_t input_shape_len = sizeof(input_shape) / sizeof(input_shape[0]);
-  const size_t input_shape_len = 2; //Not sure
-  const size_t model_input_len = 8 * sizeof(float); //We have 8 floats
+  const int64_t input_shape[] = {60, 1, 2}; //60 is for the batch size
+  const size_t input_shape_len = sizeof(input_shape) / sizeof(input_shape[0]);
+  // const size_t input_shape_len = 3; //Not sure
+  const size_t model_input_len = 120 * sizeof(float); //We have 120 floats
 
   // std::cout << "Input shape len is : " << input_shape_len << std::endl; 
 
@@ -90,12 +90,12 @@ int run_inference(OrtSession *__restrict session, float *__restrict model_input)
   assert(is_tensor);
 
   g_ort->ReleaseMemoryInfo(memory_info);
-  const char* input_names[] = {"input.1"}; //Name in the ONNX model
-  const char* output_names[] = {"10"};
+  const char* input_names[] = {"input_1:0"}; //Name in the ONNX model
+  const char* output_names[] = {"dense_5"};
 
-  std::array<float, 1> results_{};
-  int result_{0};
-  const int64_t output_shape[] = {1,1}; //Output shape with batchsize
+  std::array<float, 8*60> results_{};
+  // int result_{0};
+  const int64_t output_shape[] = {60,1,8}; //Output shape with batchsize
   const size_t output_shape_len = sizeof(output_shape) / sizeof(output_shape[0]);
 
   OrtValue* output_tensor = NULL;
@@ -349,7 +349,8 @@ int main (int argc, char* argv[]){
 *******************************************************************************/
   g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
 
-  ORTCHAR_T* model_path = "./models/toymodel/toy-model.onnx";
+  // ORTCHAR_T* model_path = "./models/toymodel/toy-model.onnx";
+  ORTCHAR_T* model_path = "./frameworks/ONNX/models/model_bs60.onnx";
 
   OrtEnv* env;
   ORT_ABORT_ON_ERROR(g_ort->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "myenv", &env));
@@ -361,10 +362,10 @@ int main (int argc, char* argv[]){
 
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_real_distribution<float> uniform(-1.0, 1.0);
+  std::uniform_real_distribution<float> uniform(0, 1.0);
 
-  float randArray[8];
-  for(int i=0;i<8;i++)
+  float randArray[120];
+  for(int i=0;i<120;i++)
     randArray[i]=uniform(gen)*10;  //Generate number between 0 to 99
 
   int ret = run_inference(session, randArray);
@@ -415,23 +416,24 @@ int main (int argc, char* argv[]){
   }
 
   if(myid==0){
-    std::cout << "\n\n=========================================\nTIMERS :\n";
-    initTimer.printInfo();
-    mpiTimer.printInfo();
-    computeTimer.printInfo();
+    // std::cout << "\n\n=========================================\nTIMERS :\n";
+    // initTimer.printInfo();
+    // mpiTimer.printInfo();
+    // computeTimer.printInfo();
 
-    std::cout << "\nSEQUENTIAL COMPUTATION : " \
-              << computeTimer.get_perf("GlobalMv")
-              << std::endl;
+    // std::cout << "\nSEQUENTIAL COMPUTATION : " \
+    //           << computeTimer.get_perf("GlobalMv")
+    //           << std::endl;
 
-    double mpiTime = computeTimer.get_perf("LocalMv")
-                    // + mpiTimer.get_perf("BcastVector")
-                    + mpiTimer.get_perf("MPIScatterV")
-                    + mpiTimer.get_perf("MPIGatherV");
+    // double mpiTime = computeTimer.get_perf("LocalMv")
+    //                 // + mpiTimer.get_perf("BcastVector")
+    //                 + mpiTimer.get_perf("MPIScatterV")
+    //                 + mpiTimer.get_perf("MPIGatherV");
 
-    std::cout << "MPI COMPUTATION : " \
-              << mpiTime
-              << std::endl;
+    // std::cout << "MPI COMPUTATION : " \
+    //           << mpiTime
+    //           << std::endl;
+  std::cout << "Done !" << std::endl;
   }
 
   /* Finalize MPI */

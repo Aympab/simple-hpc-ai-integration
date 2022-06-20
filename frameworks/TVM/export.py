@@ -23,6 +23,8 @@ target = "llvm"
 
 input_name = "input_1:0"
 x = np.ones((1,1,2))
+
+
 shape_dict = {input_name: x.shape}
 mod, params = relay.frontend.from_onnx(onnx_model, shape_dict)
 

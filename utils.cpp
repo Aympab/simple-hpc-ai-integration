@@ -28,9 +28,13 @@ const OrtApi* g_ort = NULL;
 
 int run_inference(OrtSession* session){//, const ORTCHAR_T* input_file, const ORTCHAR_T* output_file) {
     size_t model_input_ele_count;
-    float model_input[] = {1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2};
-    const size_t model_input_len = 8;
-    const int64_t input_shape[] = {1};
+    // float model_input[] = {1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2};
+    float model_input[] = {1.2, 1.2};
+    std::Array<float, 120> model_input;
+    model_input::fill(1.2);
+
+    const size_t model_input_len = 2;
+    const int64_t input_shape[] = {60,1,2};
     const size_t input_shape_len = 1;
 
     OrtMemoryInfo* memory_info;
