@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if (($# < 1))
+then
+    echo "Not enough arguments (usage : ./archive-and-send <config-name>)"
+    exit 1
+fi
+
+echo "Zipping compiledNN for configuration ${1}..."
+
+TAR_NAME=compiledNN-${1}.tar.gz
+
+tar cvzf ${TAR_NAME} compiledNN-bs*
+scp ${TAR_NAME} millana@inti-amd.ocre.cea.fr:/ccc/home/cont001/ocre/millana/source/SAMPO

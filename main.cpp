@@ -420,7 +420,7 @@ int main (int argc, char* argv[]){
     // initTimer.printInfo();
     // mpiTimer.printInfo();
     // computeTimer.printInfo();
-
+    std::cout << "Alert \a" << std::endl;
     // std::cout << "\nSEQUENTIAL COMPUTATION : " \
     //           << computeTimer.get_perf("GlobalMv")
     //           << std::endl;

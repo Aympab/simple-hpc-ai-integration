@@ -1,0 +1,9 @@
+tvmc compile --target "llvm" --input-shapes "input_1:0:[200,1,2]" --output model_bs200-tvm.tar ../ONNX/models/model_bs200.onnx
+
+
+for i in {60, 200, 3000, 3536}
+do
+    echo ${i}
+done
+
+tvmc compile --target "llvm -mcpu=skylake-avx512" --input-shapes "input_1:0:[200,1,2]" --output model_bs200-tvm.tar ../ONNX/models/model_bs200.onnx

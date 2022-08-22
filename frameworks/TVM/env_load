@@ -1,4 +1,5 @@
 export TVM_HOME=/net/jabba/home0/am611608/source/tvm
+# export TVM_HOME=/home/cea/am611608/local/libtvm
 export PYTHONPATH=${PYTHONPATH}:$TVM_HOME/python
 alias tvmc='python -m tvm.driver.tvmc'
 module load gcc-9.4.0-gcc-4.8.5-jwfkwcs

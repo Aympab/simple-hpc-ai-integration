@@ -1,0 +1,11 @@
+#!/bin/sh
+source env_load
+
+for i in 60 200 3000 3536
+do
+    echo "Compiling batch size ${i}..."
+    tvmc compile --target "llvm -mcpu=skylake-avx512" \
+                 --input-shapes "input_1:0:[${i},1,2]" \
+                 --output model_bs${i}-tvm.tar         \
+                 ../ONNX/models/model_bs${i}.onnx
+done

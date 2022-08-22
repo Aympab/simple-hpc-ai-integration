@@ -3,5 +3,6 @@
         "alignedvector3": "cpp",
         "string": "cpp",
         "array": "cpp"
-    }
+    },
+    "jupyter.jupyterServerType": "remote"
 }
