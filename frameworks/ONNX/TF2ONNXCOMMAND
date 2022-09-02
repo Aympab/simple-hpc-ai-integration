@@ -1,0 +1,1 @@
+python -m tf2onnx.convert --saved-model models/sampo-model/cas_test/nn/mutation_toy_case_best/ --output model_bs5000.onnx --inputs input_1:0[5000,1,2] --outputs dense_5[5000,1,8]
